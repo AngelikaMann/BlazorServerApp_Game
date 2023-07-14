@@ -1,0 +1,126 @@
+﻿@page "/rsp"
+@using System.Timers
+@using BlazorApp_Game.Helpers
+
+@implements IDisposable
+
+<div class="row text-center">
+    <div class="col mt-3">
+        <hi class="text-success">RSP minigame</hi>
+    </div>
+</div>
+@if (!string.IsNullOrWhiteSpace(gameResultMessage))
+{
+    <div class="row ">
+        <div class="col text-center alert alert-@resultStyle">
+            <h3>@gameResultMessage</h3>
+        </div>
+    </div>
+}
+
+
+<div class="row text-center">
+    <div class="col mb-5 justify-content-center">
+       @* <img src="./images/paper.png" class="general-image" /> *@
+        <img src="@opponent.Image" class="general-image" />
+    </div>
+</div>
+<div class="row text-center">
+    <div class="col mb-5 justify-content-center">
+        <button class="btn btn-primary" @onclick="ResetGame" >Start New Game</button>
+    </div>
+</div>
+
+
+<div class="row text-center justify-content-around">
+    @foreach (var item in games)
+    {
+        <img src="@item.Image" class="general-image hovered-image mt-2" @onclick="@(()=> SelectingHandler(item))" />
+    }
+
+    @*<div class="col ">
+    <img src="./Images/paper.png" class="general-image hovered-image" />
+    </div>
+    <div class="col ">
+    <img src="./Images/scissors.png" class="general-image hovered-image" />
+    </div>
+    <div class="col ">
+    <img src="./Images/rock.png" class="general-image hovered-image" />
+    </div>*@
+ </div>
+
+@code {
+
+
+    List<GameHandler> games = new List<GameHandler>()
+    {
+        new GameHandler{Choose=RSPOptions.Paper, LooseCondition=RSPOptions.Scissors,WinCondition=RSPOptions.Rock, Image="./Images/paper.png"},
+        new GameHandler{Choose=RSPOptions.Rock, LooseCondition=RSPOptions.Paper,WinCondition=RSPOptions.Scissors, Image="./Images/rock.png"},
+        new GameHandler{Choose=RSPOptions.Scissors, LooseCondition=RSPOptions.Rock,WinCondition=RSPOptions.Paper, Image="./Images/scissors.png"},
+    };
+
+
+    Timer timer;
+    GameHandler opponent;
+    Random rnd;
+    string gameResultMessage = string.Empty;
+    string resultStyle = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        opponent = games[0];
+        rnd = new Random(DateTime.Now.Millisecond);
+
+        timer = new Timer();
+        timer.Interval = 100;
+        timer.Elapsed += ElapsedTimer;
+        timer.Start();
+    }
+    int imageIndex = 0;
+
+    async void ElapsedTimer(object sender, ElapsedEventArgs args)
+    {
+        imageIndex = rnd.Next(0, games.Count);
+        opponent = games[imageIndex];
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void SelectingHandler(GameHandler game)
+    {
+        timer.Stop();
+        GameState gameResult = game.GameRezult(opponent);
+
+
+        switch (gameResult)
+        {
+            case GameState.Victory:
+                gameResultMessage = "Congratulation! You WON!";
+                resultStyle = "success";
+                break;
+            case GameState.Loss:
+                gameResultMessage = "Fail! You LOST!";
+                resultStyle = "danger";
+                break;
+            case GameState.Draw:
+                gameResultMessage = "Draw! Congratulation to both!";
+                resultStyle = "primary";
+                break;
+            default:
+                break;
+        }
+    }
+    void ResetGame()
+    {
+        timer.Start();
+        gameResultMessage = string.Empty;
+        resultStyle = string.Empty;
+    }
+    
+    public void Dispose()
+    {
+        if (timer != null)
+            timer.Dispose();
+    }
+
+
+}
